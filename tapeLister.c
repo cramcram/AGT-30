@@ -55,6 +55,7 @@ int optind = 0;
 static struct option longopt[] =
 {
    {"input", required_argument,    0, 'i'},
+   {"help",        no_argument,    0, '?'},
    {NULL   ,                 0, NULL,   0}
 };
 
@@ -96,6 +97,15 @@ void* readFile(FILE *fp, int *fileSize) {
     return buffer;
 }
 
+void usage(char *myname)
+{
+	fprintf(stderr, "Usage: %s [-i input_file_name]\n", myname);
+	fprintf(stderr, "           -? Print this help message\n");
+	fprintf(stderr, "           -i Specify input tape image, else stdin\n");
+
+	return;
+}
+
 int main(int argc, char **argv)
 {
 	int c;
@@ -107,6 +117,10 @@ int main(int argc, char **argv)
 	{
 	   switch (c)
 	   {
+		   case '?':
+			   usage(argv[0]);
+			   return(0);
+
 		   case 'i':
 			   if ((inputStream = fopen(optarg, "r")) == NULL)
 			   {
