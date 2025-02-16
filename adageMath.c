@@ -48,7 +48,6 @@ uint32_t add30Bit(uint32_t a, uint32_t b)
 {
 	uint32_t sum;
 
-//	fprintf(stderr, "a = 0%10o, b = 0%10o, ", a, b);
 	a &= 0x3fffffff;
 	b &= 0x3fffffff;
 
@@ -59,8 +58,6 @@ uint32_t add30Bit(uint32_t a, uint32_t b)
 		sum++;
 		sum &= 0x3fffffff;
 	}
-
-//	fprintf(stderr, "sum = 0%10o\n", sum);
 
 	return(sum);
 }
@@ -92,8 +89,7 @@ int outputAsciiFromAmosWordWithTabs(FILE *outStream, uint32_t amosWord,
 	int i;
 	static int nextTabStop = 0;
 	static int tabIndex = 0;
-	static char lastChar = 0;
-	static char asciiChar =0;
+	char asciiChar =0;
 
 	// Setup tab info if start of output line
 
@@ -107,13 +103,7 @@ int outputAsciiFromAmosWordWithTabs(FILE *outStream, uint32_t amosWord,
 
 	for (i = 0; i < 5; i++)
 	{
-		lastChar = asciiChar;
 		asciiChar = amos2Ascii[(amosWord >> shiftStops[i]) & 077];
-
-		if ((lastChar == ':') && (asciiChar == '\t'))
-		{
-			fprintf(stderr, "Found it, posn = %d\n", posn);
-		}
 
 		if (asciiChar == '\t')
 		{
@@ -177,7 +167,6 @@ char *amosName2AsciiNoNull(uint32_t amosNameWord, char *asciiStr)
 
 	return(outstr);
 }
-
 
 char *amosString2Ascii(uint32_t *amosString, char *asciiStr)
 {
