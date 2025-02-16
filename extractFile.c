@@ -361,9 +361,13 @@ fprintf(stderr, "Found the file %s.%s as File %03o, Record %03o, Type %02o\n",
 			{
 				if (asciiOut)
 				{
-//					if ((outputAsciiFromAmosWordWithTabs(outputStream,
+#if 1
+					if ((posn = outputAsciiFromAmosWordWithTabs(outputStream,
+						pRecordData[i], posn)) < 0)
+#else
 					if ((outputAsciiFromAmosWord(outputStream,
 						pRecordData[i], posn)) < 0)
+#endif
 					{
 						posn = 1;
 					}

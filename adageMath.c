@@ -24,10 +24,9 @@ char amos2Ascii[65]	=			"[%]!&*:_"
 								"PQRSTUVW"
 								"XYZ$#@^b";
 
-//	Adage tab settings -> +7 +13 +10 +8
-//	Adage tab settings -> 8 21 31 39
+//	Adage tab settings -> 13, 27, 43, -8
 
-char tabStops[256] = {8, 21, 31, 39, -8};
+char tabStops[256] = {13, 27, 43, -8};
 
 char *typeName[16] = {
 	"SYMS", "DATA", "RELOC", "ASCII", "TEXT", "RLSYM", "PRNTR", "ATEXT",
@@ -91,9 +90,10 @@ int outputAsciiFromAmosWordWithTabs(FILE *outStream, uint32_t amosWord,
 	int posn)
 {
 	int i;
-	char asciiChar;
 	static int nextTabStop = 0;
 	static int tabIndex = 0;
+	static char lastChar = 0;
+	static char asciiChar =0;
 
 	// Setup tab info if start of output line
 
@@ -107,7 +107,13 @@ int outputAsciiFromAmosWordWithTabs(FILE *outStream, uint32_t amosWord,
 
 	for (i = 0; i < 5; i++)
 	{
-		asciiChar = (amosWord >> shiftStops[i]) & 077;
+		lastChar = asciiChar;
+		asciiChar = amos2Ascii[(amosWord >> shiftStops[i]) & 077];
+
+		if ((lastChar == ':') && (asciiChar == '\t'))
+		{
+			fprintf(stderr, "Found it, posn = %d\n", posn);
+		}
 
 		if (asciiChar == '\t')
 		{
