@@ -358,7 +358,7 @@ int main(int argc, char **argv)
 				if (asciiOut)
 				{
 					if ((posn = outputAsciiFromAmosWordWithTabs(outputStream,
-						pRecordData[i], AMOS_BRACKET, posn)) < 0)
+						pRecordData[i], posn)) < 0)
 					{
 						posn = 1;
 					}

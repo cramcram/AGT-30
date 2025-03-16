@@ -151,7 +151,7 @@ void usage(char *myname)
 {
 	fprintf(stderr, "Usage: %s [-i input_file_name] [-o output_file_name] "\
 							"FILE.TYPE\n", myname);
-	fprintf(stderr, "           -i Specify input file name, else stdin\n");
+	fprintf(stderr, "           -i Specify output file name, else stdin\n");
 	fprintf(stderr, "           -o Specify output file name, else stdout\n");
 	fprintf(stderr, "           -A Interpret binary words as ASCII chars\n");
 	fprintf(stderr, "           FILE.TYPE - Name of file to extract\n");
@@ -358,7 +358,7 @@ int main(int argc, char **argv)
 				if (asciiOut)
 				{
 					if ((posn = outputAsciiFromAmosWordWithTabs(outputStream,
-						pRecordData[i], AMOS_BRACKET, posn)) < 0)
+						pRecordData[i], posn)) < 0)
 					{
 						posn = 1;
 					}

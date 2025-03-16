@@ -6,32 +6,23 @@
 #include <getopt.h>
 #include "adageMath.h"
 
-char amos2Ascii[3][128] = {{" %]!&*:_"
-							"+t?\"'r()"
-							"01234567"
-							"89;=,-./"
-							" ABCDEFG"
-							"HIJKLMNO"
-							"PQRSTUVW"
-							"XYZ$#@^b"},
+char amos2AsciiNoBracket[65] =	" %]!&*:_"
+								"+t?\"'r()"
+								"01234567"
+								"89;=,-./"
+								" ABCDEFG"
+								"HIJKLMNO"
+								"PQRSTUVW"
+								"XYZ$#@^b";
 
-						   {"n%]!&*:_"
-							"+t?\"'r()"
-							"01234567"
-							"89;=,-./"
-							" ABCDEFG"
-							"HIJKLMNO"
-							"PQRSTUVW"
-							"XYZ$#@^b"},
-
-						   {"[%]!&*:_"
-							"+\t?\"'\n()"
-							"01234567"
-							"89;=,-./"
-							" ABCDEFG"
-							"HIJKLMNO"
-							"PQRSTUVW"
-							"XYZ$#@^b" }};
+char amos2Ascii[65]	=			"[%]!&*:_"
+								"+\t?\"'\n()"
+								"01234567"
+								"89;=,-./"
+								" ABCDEFG"
+								"HIJKLMNO"
+								"PQRSTUVW"
+								"XYZ$#@^b";
 
 //	Adage tab settings -> 13, 27, 43, -8
 
@@ -50,8 +41,6 @@ char *monthNames[16] = {
 int shiftStops[5] = {24, 18, 12, 6, 0};
 
 #define GOT_HERE {fprintf(stderr, "%d: Got here!\n", __LINE__);}
-//#define GOT_HERE {fprintf(stderr, "%s:%s:%d: Got here!\n", 
-//		__FILE__,__func__,__LINE__);}
 
 // Do a 30 bit + 30 bit 1's complement add
 
@@ -59,6 +48,7 @@ uint32_t add30Bit(uint32_t a, uint32_t b)
 {
 	uint32_t sum;
 
+//	fprintf(stderr, "a = 0%10o, b = 0%10o, ", a, b);
 	a &= 0x3fffffff;
 	b &= 0x3fffffff;
 
@@ -70,18 +60,19 @@ uint32_t add30Bit(uint32_t a, uint32_t b)
 		sum &= 0x3fffffff;
 	}
 
+//	fprintf(stderr, "sum = 0%10o\n", sum);
+
 	return(sum);
 }
 
-int outputAsciiFromAmosWord(FILE *outStream, uint32_t amosWord, int amosTable,
-							int posn)
+int outputAsciiFromAmosWord(FILE *outStream, uint32_t amosWord, int posn)
 {
 	int i;
 	char asciiChar;
 
 	for (i = 0; i < 5; i++)
 	{
-		asciiChar = amos2Ascii[amosTable][(amosWord >> shiftStops[i]) & 077];
+		asciiChar = amos2Ascii[(amosWord >> shiftStops[i]) & 077];
 		fputc(asciiChar, outStream);
 		posn++;
 
@@ -96,12 +87,13 @@ int outputAsciiFromAmosWord(FILE *outStream, uint32_t amosWord, int amosTable,
 }
 
 int outputAsciiFromAmosWordWithTabs(FILE *outStream, uint32_t amosWord,
-									int amosTable, int posn)
+	int posn)
 {
 	int i;
 	static int nextTabStop = 0;
 	static int tabIndex = 0;
-	char asciiChar =0;
+	static char lastChar = 0;
+	static char asciiChar =0;
 
 	// Setup tab info if start of output line
 
@@ -115,7 +107,13 @@ int outputAsciiFromAmosWordWithTabs(FILE *outStream, uint32_t amosWord,
 
 	for (i = 0; i < 5; i++)
 	{
-		asciiChar = amos2Ascii[amosTable][(amosWord >> shiftStops[i]) & 077];
+		lastChar = asciiChar;
+		asciiChar = amos2Ascii[(amosWord >> shiftStops[i]) & 077];
+
+		if ((lastChar == ':') && (asciiChar == '\t'))
+		{
+			fprintf(stderr, "Found it, posn = %d\n", posn);
+		}
 
 		if (asciiChar == '\t')
 		{
@@ -155,11 +153,11 @@ char *amosName2Ascii(uint32_t amosNameWord, char *asciiStr)
 	static char lastStr[8];
 	char *outstr = (asciiStr == NULL) ? lastStr : asciiStr;
 
-	outstr[0] = amos2Ascii[AMOS_SPACE][(amosNameWord >> 24) & 077];
-	outstr[1] = amos2Ascii[AMOS_SPACE][(amosNameWord >> 18) & 077];
-	outstr[2] = amos2Ascii[AMOS_SPACE][(amosNameWord >> 12) & 077];
-	outstr[3] = amos2Ascii[AMOS_SPACE][(amosNameWord >>  6) & 077];
-	outstr[4] = amos2Ascii[AMOS_SPACE][(amosNameWord >>  0) & 077];
+	outstr[0] = amos2AsciiNoBracket[(amosNameWord >> 24) & 077];
+	outstr[1] = amos2AsciiNoBracket[(amosNameWord >> 18) & 077];
+	outstr[2] = amos2AsciiNoBracket[(amosNameWord >> 12) & 077];
+	outstr[3] = amos2AsciiNoBracket[(amosNameWord >>  6) & 077];
+	outstr[4] = amos2AsciiNoBracket[(amosNameWord >>  0) & 077];
 	outstr[5] = '\0';
 
 	return(outstr);
@@ -170,15 +168,16 @@ char *amosName2AsciiNoNull(uint32_t amosNameWord, char *asciiStr)
 	static char lastStr[8];
 	char *outstr = (asciiStr == NULL) ? lastStr : asciiStr;
 
-	outstr[0] = amos2Ascii[AMOS_RAW][(amosNameWord >> 24) & 077];
-	outstr[1] = amos2Ascii[AMOS_RAW][(amosNameWord >> 18) & 077];
-	outstr[2] = amos2Ascii[AMOS_RAW][(amosNameWord >> 12) & 077];
-	outstr[3] = amos2Ascii[AMOS_RAW][(amosNameWord >>  6) & 077];
-	outstr[4] = amos2Ascii[AMOS_RAW][(amosNameWord >>  0) & 077];
+	outstr[0] = amos2Ascii[(amosNameWord >> 24) & 077];
+	outstr[1] = amos2Ascii[(amosNameWord >> 18) & 077];
+	outstr[2] = amos2Ascii[(amosNameWord >> 12) & 077];
+	outstr[3] = amos2Ascii[(amosNameWord >>  6) & 077];
+	outstr[4] = amos2Ascii[(amosNameWord >>  0) & 077];
 	outstr[5] = '\0';
 
 	return(outstr);
 }
+
 
 char *amosString2Ascii(uint32_t *amosString, char *asciiStr)
 {

@@ -28,6 +28,7 @@ char tapeFileName[64] = "";
 char adageFileName[64] = "";
 char adageFileNameWord[8] = "";
 char adageFileTypeName[64] = "";
+char buffer[256];
 
 uint32_t computedChecksum;
 uint32_t expectedChecksum;
@@ -35,6 +36,7 @@ uint32_t *pInputOrigin = NULL;   // Saved readFile() malloc
 uint32_t *pInput = NULL;   // Pointer to current inputFile block
 uint32_t interRecordWord;   // (== pInput[0])
 uint32_t *pRecordData;   // (== pInput[5])
+uint32_t octalWords[8];
 
 int origin;
 int revision;
@@ -67,12 +69,14 @@ char outputName[8] = "";
 char outputTypeName[8] = "";
 int outputType = -1;
 int asciiOut = 0;
+int octalOut = 0;
 
 static struct option longopt[] =
 {
    {"output", required_argument,    NULL, 'o'},
    {"input" , required_argument,    NULL, 'i'},
    {"ASCII" , no_argument,          NULL, 'A'},
+   {"Octal" , no_argument,          NULL, 'O'},
    {NULL    , 0,                    NULL, 0}
 };
 
@@ -80,6 +84,8 @@ enum inputFormat
 {
 	BIN, ATEXT, ASCII, DISK, UNKNOWN
 };
+
+enum inputFormat conversionType;
 
 struct FTYPES
 {
@@ -108,44 +114,7 @@ struct FTYPES typeInfo[16] =
 	{017, "TYPE8", UNKNOWN}
 };
 
-#define GOT_HERE {fprintf(stderr, "%d: Got here!\n", __LINE__);}
-
-void* readFile(FILE *fp, int *fileSize)
-{
-    size_t capacity = 1024; // Initial capacity (in uint32_t units)
-    size_t size = 0;
-    uint32_t *buffer = malloc(capacity * sizeof(uint32_t));
-    uint32_t value;
-
-    if (!fp) {
-		return NULL;
-	}
-
-    if (!buffer) {
-        perror("malloc failed");
-        return NULL;
-    }
-    
-    while (fread(&value, sizeof(uint32_t), 1, fp) == 1) {
-        if (size >= capacity) {
-            capacity *= 0x10000;
-            uint32_t *temp = realloc(buffer, capacity * sizeof(uint32_t));
-            if (!temp) {
-                perror("realloc failed");
-                free(buffer);
-                return NULL;
-            }
-            buffer = temp;
-        }
-        buffer[size++] = value;
-    }
-    
-    if (fileSize) {
-        *fileSize = size;
-    }
-
-    return buffer;
-}
+//#define GOT_HERE {fprintf(stderr, "%d: Got here!\n", __LINE__);}
 
 void usage(char *myname)
 {
@@ -175,9 +144,7 @@ int main(int argc, char **argv)
 	strcpy(inputFileName, "<stdin>");
 	strcpy(outputFileName, "<stdout>");
 
-//	Adage tab settings -> 13, 27, 43, -8
-
-	while ((c = getopt_long(argc, argv, "?Ai:o:", longopt, &optind)) >= 0)
+	while ((c = getopt_long(argc, argv, "?OAi:o:", longopt, &optind)) >= 0)
 	{
 	   switch (c)
 	   {
@@ -195,6 +162,11 @@ int main(int argc, char **argv)
 
 			case 'A':
 			   asciiOut = 1;
+
+			   break;
+
+			case 'O':
+			   octalOut = 1;
 
 			   break;
 
@@ -218,7 +190,7 @@ int main(int argc, char **argv)
 	   }
 	}
 
-	if (argv[optind] == NULL)
+	if ((optind >= argc) || (argv[optind] == NULL))
 	{
 		fprintf(stderr, "Missing FILE.TYPE argument\n");
 		return(1);
@@ -247,7 +219,7 @@ int main(int argc, char **argv)
 		return(1);
 	}
 
-#if 0
+#if 1
 	fprintf(stderr, "Using %s.%s as FILE.TYPE to extract from %s\n",
 		adageFileName, adageFileTypeName, inputFileName);
 #endif
@@ -268,6 +240,7 @@ int main(int argc, char **argv)
 		}
 
 		adageFileTypeNum = typeInfo[i].typeNum;
+		conversionType = typeInfo[i].type;
 	}
 
 	if (outputType >= NUM_TYPES)
@@ -355,17 +328,50 @@ int main(int argc, char **argv)
 
 			if (extractThisFile)
 			{
-				if (asciiOut)
+				switch(conversionType)
 				{
-					if ((posn = outputAsciiFromAmosWordWithTabs(outputStream,
-						pRecordData[i], AMOS_BRACKET, posn)) < 0)
-					{
-						posn = 1;
-					}
-				}
-				else
-				{
-					fwrite((pRecordData + i), sizeof(uint32_t), 1,outputStream);
+					case DISK:
+						fwrite((pRecordData + i), sizeof(uint32_t), 1,
+							outputStream);
+
+						break;
+
+					case ATEXT:
+						if (asciiOut)
+						{
+							if ((posn =
+								outputAsciiFromAmosWordWithTabs(outputStream,
+								pRecordData[i], posn)) < 0)
+							{
+								posn = 1;
+							}
+						}
+						else
+						{
+							fwrite((pRecordData + i), sizeof(uint32_t), 1,
+								outputStream);
+						}
+
+					case BIN:
+						fwrite((pRecordData + i), sizeof(uint32_t), 1,
+							outputStream);
+
+						break;
+
+					case ASCII:
+						fprintf(stderr, "ASCII extraction not supported yet\n");
+						return(1);
+
+					case UNKNOWN:
+						fprintf(stderr,
+							"UNKNOWN extraction not supported yet\n");
+						return(1);
+
+					default:
+						fprintf(stderr, "Undefined extraction type %d\n",
+							conversionType);
+
+						return(1);
 				}
 			}
 		}

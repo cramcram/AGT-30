@@ -35,6 +35,7 @@ uint32_t *pInputOrigin = NULL;   // Saved readFile() malloc
 uint32_t *pInput = NULL;   // Pointer to current inputFile block
 uint32_t interRecordWord;   // (== pInput[0])
 uint32_t *pRecordData;   // (== pInput[5])
+//uint32_t outWord;
 
 int origin;
 int revision;
@@ -151,7 +152,7 @@ void usage(char *myname)
 {
 	fprintf(stderr, "Usage: %s [-i input_file_name] [-o output_file_name] "\
 							"FILE.TYPE\n", myname);
-	fprintf(stderr, "           -i Specify input file name, else stdin\n");
+	fprintf(stderr, "           -i Specify output file name, else stdin\n");
 	fprintf(stderr, "           -o Specify output file name, else stdout\n");
 	fprintf(stderr, "           -A Interpret binary words as ASCII chars\n");
 	fprintf(stderr, "           FILE.TYPE - Name of file to extract\n");
@@ -175,7 +176,8 @@ int main(int argc, char **argv)
 	strcpy(inputFileName, "<stdin>");
 	strcpy(outputFileName, "<stdout>");
 
-//	Adage tab settings -> 13, 27, 43, -8
+//	Adage tab settings -> 7 13 10 8
+//	Adage tab settings -> 8 21 31 39
 
 	while ((c = getopt_long(argc, argv, "?Ai:o:", longopt, &optind)) >= 0)
 	{
@@ -326,19 +328,21 @@ int main(int argc, char **argv)
 		typeNum = (pHeader->tvsOrigin >> (11 + 15)) & 017;
 		origin = pHeader->tvsOrigin & 077777;
 
+//fprintf(stderr, "compareName >%s</%d to >%s</%d is %d\n",
+//	tapeFileName, (int)strlen(tapeFileName), adageFileNameWord,
+//	(int)strlen(adageFileNameWord), !strcmp(tapeFileName, adageFileName));
+
+//fprintf(stderr, "compare (%d to %d) is %d\n",
+//	typeNum, adageFileTypeNum, (typeNum == adageFileTypeNum));
+	
 		extractThisFile =
 			((!strncmp(tapeFileName, adageFileNameWord,
 			strlen(adageFileNameWord))) && (typeNum == adageFileTypeNum));
 
 		if (extractThisFile)
 		{
-			if (tapeRecordNum == 1)
-			{
-				fprintf(stderr,
-					"Found the file %s.%s as File %03o, Record %03o\n",
-					adageFileNameWord, adageFileTypeName, tapeFileNum,
-					tapeRecordNum);
-			}
+fprintf(stderr, "Found the file %s.%s as File %03o, Record %03o, Type %02o\n",
+	adageFileNameWord, adageFileTypeName, tapeFileNum, tapeRecordNum, typeNum);
 
 			posn = 1;
 		}
@@ -357,11 +361,19 @@ int main(int argc, char **argv)
 			{
 				if (asciiOut)
 				{
-					if ((posn = outputAsciiFromAmosWordWithTabs(outputStream,
-						pRecordData[i], AMOS_BRACKET, posn)) < 0)
+//					if ((outputAsciiFromAmosWordWithTabs(outputStream,
+					if ((outputAsciiFromAmosWord(outputStream,
+						pRecordData[i], posn)) < 0)
 					{
 						posn = 1;
 					}
+#if 0
+					fputc(amos2Ascii[(outWord >> 24) & 077], outputStream);
+					fputc(amos2Ascii[(outWord >> 18) & 077], outputStream);
+					fputc(amos2Ascii[(outWord >> 12) & 077], outputStream);
+					fputc(amos2Ascii[(outWord >>  6) & 077], outputStream);
+					fputc(amos2Ascii[(outWord >>  0) & 077], outputStream);
+#endif
 				}
 				else
 				{

@@ -1,0 +1,304 @@
+EXPUNGE
+TITLE 3DTTT
+ENTRY TURNO
+
+AR14=34100!H
+MD05=25000!H
+
+TURNO:      JUMP          0
+            MDAR'L
+            JUMP          LOOK
+            ARMD          $WT1
+            JPSR          $TTT3D
+                          ISUM
+                          IROW
+                          IWAIT
+                          ITEST
+                          MOVE
+                          M1
+                          M2
+                          M3
+            MDIR          TURNO
+
+LOOK:                     0               [ENTRY
+            MDAR'L
+                          MOVE
+            MDAS'F'N      1
+            ARMD'L
+ADD:                      0
+            ARXO'F        
+            ARMD          ADDC
+            MDAR'F'N      100
+            MDAR'A        MSK
+            ARMD'L
+NO:                       0
+LOOP1:      JPSR          DRAW
+                          0
+                          GRID
+LOOP2:      MDAR'X        NO
+            JPLS          .+2
+            JUMP          LOOK+1
+            MDAR'X        ADDC
+            MDAR'I'X      ADD
+            JPLS          .+2
+            JUMP          LOOP2
+            MDXO'F        5
+            JPLS          .+2
+            JUMP          DISPX
+            MDXO'F        1'5
+            JPLS          ERR
+            JUMP          DISPO
+
+DISPX:      MDAR          ADDC
+            MDAE'L
+            MDAR          TBL
+            ARIR'F
+            ARMD          XYFORX
+            JPSR          DRAW
+XYFORX:                   0
+                          X1
+            JUMP          LOOP1
+
+DISPO:      MDAR          ADDC
+            MDAE'L
+            MDAR          TBL
+            ARIR'F
+            ARMD          XYFORO
+            JPSR          DRAW
+XYFORO:                   0
+                          O1
+            JUMP          LOOP1
+
+ERR:        JPSR          $OFST
+STRING' INVALID ELEMENT IN MOVE ARRAY
+'
+            JUMP          $MON9
+
+EXPUNGE
+TITLE 3DTTT
+ENTRY TURNO
+
+AR14=34100!H
+MD05=25000!H
+
+TURNO:      JUMP          0
+            MDAR'L
+            JUMP          LOOK
+            ARMD          $WT1
+            JPSR          $TTT3D
+                          ISUM
+                          IROW
+                          IWAIT
+                          ITEST
+                          MOVE
+                          M1
+                          M2
+                          M3
+            MDIR          TURNO
+
+LOOK:                     0               [ENTRY
+            MDAR'L
+                          MOVE
+            MDAS'F'N      1
+            ARMD'L
+ADD:                      0
+            ARXO'F        
+            ARMD          ADDC
+            MDAR'F'N      100
+            MDAR'A        MSK
+            ARMD'L
+NO:                       0
+LOOP1:      JPSR          DRAW
+                          0
+                          GRID
+LOOP2:      MDAR'X        NO
+            JPLS          .+2
+            JUMP          LOOK+1
+            MDAR'X        ADDC
+            MDAR'I'X      ADD
+            JPLS          .+2
+            JUMP          LOOP2
+            MDXO'F        5
+            JPLS          .+2
+            JUMP          DISPX
+            MDXO'F        1'5
+            JPLS          ERR
+            JUMP          DISPO
+
+DISPX:      MDAR          ADDC
+            MDAE'L
+            MDAR          TBL
+            ARIR'F
+            ARMD          XYFORX
+            JPSR          DRAW
+XYFORX:                   0
+                          X1
+            JUMP          LOOP1
+
+DISPO:      MDAR          ADDC
+            MDAE'L
+            MDAR          TBL
+            ARIR'F
+            ARMD          XYFORO
+            JPSR          DRAW
+XYFORO:                   0
+                          O1
+            JUMP          LOOP1
+
+ERR:        JPSR          $OFST
+STRING' INVALID ELEMENT IN MOVE ARRAY
+'
+            JUMP          $MON9
+
+EXPUNGE
+TITLE 3DTTT
+ENTRY TURNO
+
+AR14=34100!H
+MD05=25000!H
+
+TURNO:      JUMP          0
+            MDAR'L
+            JUMP          LOOK
+            ARMD          $WT1
+            JPSR          $TTT3D
+                          ISUM
+                          IROW
+                          IWAIT
+                          ITEST
+                          MOVE
+                          M1
+                          M2
+                          M3
+            MDIR          TURNO
+
+LOOK:                     0               [ENTRY
+            MDAR'L
+                          MOVE
+            MDAS'F'N      1
+            ARMD'L
+ADD:                      0
+            ARXO'F        
+            ARMD          ADDC
+            MDAR'F'N      100
+            MDAR'A        MSK
+            ARMD'L
+NO:                       0
+LOOP1:      JPSR          DRAW
+                          0
+                          GRID
+LOOP2:      MDAR'X        NO
+            JPLS          .+2
+            JUMP          LOOK+1
+            MDAR'X        ADDC
+            MDAR'I'X      ADD
+            JPLS          .+2
+            JUMP          LOOP2
+            MDXO'F        5
+            JPLS          .+2
+            JUMP          DISPX
+            MDXO'F        1'5
+            JPLS          ERR
+            JUMP          DISPO
+
+DISPX:      MDAR          ADDC
+            MDAE'L
+            MDAR          TBL
+            ARIR'F
+            ARMD          XYFORX
+            JPSR          DRAW
+XYFORX:                   0
+                          X1
+            JUMP          LOOP1
+
+DISPO:      MDAR          ADDC
+            MDAE'L
+            MDAR          TBL
+            ARIR'F
+            ARMD          XYFORO
+            JPSR          DRAW
+XYFORO:                   0
+                          O1
+            JUMP          LOOP1
+
+ERR:        JPSR          $OFST
+STRING' INVALID ELEMENT IN MOVE ARRAY
+'
+            JUMP          $MON9
+
+EXPUNGE
+TITLE 3DTTT
+ENTRY TURNO
+
+AR14=34100!H
+MD05=25000!H
+
+TURNO:      JUMP          0
+            MDAR'L
+            JUMP          LOOK
+            ARMD          $WT1
+            JPSR          $TTT3D
+                          ISUM
+                          IROW
+                          IWAIT
+                          ITEST
+                          MOVE
+                          M1
+                          M2
+                          M3
+            MDIR          TURNO
+
+LOOK:                     0               [ENTRY
+            MDAR'L
+                          MOVE
+            MDAS'F'N      1
+            ARMD'L
+ADD:                      0
+            ARXO'F        
+            ARMD          ADDC
+            MDAR'F'N      100
+            MDAR'A        MSK
+            ARMD'L
+NO:                       0
+LOOP1:      JPSR          DRAW
+                          0
+                          GRID
+LOOP2:      MDAR'X        NO
+            JPLS          .+2
+            JUMP          LOOK+1
+            MDAR'X        ADDC
+            MDAR'I'X      ADD
+            JPLS          .+2
+            JUMP          LOOP2
+            MDXO'F        5
+            JPLS          .+2
+            JUMP          DISPX
+            MDXO'F        1'5
+            JPLS          ERR
+            JUMP          DISPO
+
+DISPX:      MDAR          ADDC
+            MDAE'L
+            MDAR          TBL
+            ARIR'F
+            ARMD          XYFORX
+            JPSR          DRAW
+XYFORX:                   0
+                          X1
+            JUMP          LOOP1
+
+DISPO:      MDAR          ADDC
+            MDAE'L
+            MDAR          TBL
+            ARIR'F
+            ARMD          XYFORO
+            JPSR          DRAW
+XYFORO:                   0
+                          O1
+            JUMP          LOOP1
+
+ERR:        JPSR          $OFST
+STRING' INVALID ELEMENT IN MOVE ARRAY
+'
+            JUMP          $MON9
+

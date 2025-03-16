@@ -1,0 +1,91 @@
+[ MONITOR LOADER FOR UNIT 0, PACK 0 ONLY
+[ MODIFICATION OF HENRY KERR'S
+[ E.R.T.  VERSION 1  REVISION "A"  19 NOV 70
+
+EXPUNGE
+
+TITLE       AMLD0
+ENTRY       AMLD0
+
+ABSOLUTE
+LOC         0
+
+PU1PV = 77776             [PULSE 1 PIVOT
+CWPVT = 77720             [DISK PIVOTS
+IWPVT = 77721
+SWPVT = 77722
+NTPVT = 77723
+ETPVT = 77724
+STPVT = 77725
+ECPVT = 77726
+
+AMLD0:      MDBR          ZERO            [CLEAR BR
+            MDAR'F        ER              [SET ERROR ROUTINE ADDRESS
+            ARMD          ETPVT           [  IN ERROR TERMINATE
+            ARMD          ECPVT           [  AND END CYLINDER PIVOTS
+
+            MDAR'F        NORML           [SET NORMAL ROUTINE ADDRESS 
+            ARMD          STPVT           [  IN SEEK TERMINATE
+            ARMD          NTPVT           [  AND NORMAL TERMINATE PIVOTS
+
+            JPSR          OPER            [SEEK HOME TRACK
+            3000!H        0
+            JPSR          OPER            [SEEK TO TRACK 2
+            2000!H        40
+            MDAR'L                        [SETUP INSTRUCTION WORD
+            3200!H!B!B    73400-1         [FOR FIRST CYLINDER READ
+            ARMD          IWPVT
+            JPSR          OPER            [READ FIRST CYLINDER
+            6000!H        40
+
+            JPSR          OPER            [SEEK TO NEXT CYLINDER
+            2000!H        20
+            MDAR'L                        [SETUP INSTRUCTION WORD
+            1100!H!B!B    76600-1         [FOR NEXT CYLINDER READ
+            ARMD          IWPVT
+            JPSR          OPER            [READ NEXT PORTION
+            6000!H        60
+            JUMP          73400           [GO ENTER MONITOR
+
+[ OPERATION PERFORMING SUBROUTINE
+
+OPER:       JUMP          .               [ENTRY
+            MDAR'I        OPER            [FETCH OPERATION CODE
+            ARMD          CWPVT           [SAVE IN COMMAND PIVOT
+
+            SKUA          1000            [DISK BUSY ?
+            JUMP          .-1             [WAIT IF YES
+
+            MDIC          ZERO            [CLEAR IC
+            MDIC'O'L                      [START DISK
+            1000!H
+            JUMP          .               [TRAP: WAIT FOR DISK INTERRUPT
+
+            MDAR'H        CWPVT           [SEEK OPERATION
+            MDXO'F        2000
+            JPLS          .+4             [SKIP IF NOT
+
+            MDAR'H        SWPVT           [FETCH STATUS WORD
+            MDAR'A'F      10              [SEEK ERROR ?
+            JSLS          ER              [JUMP IF YES TO ERROR ROUTINE
+
+            MDIR'X        OPER            [RETURN
+
+[ ERROR HANDLING SUBROUTINE
+
+ER:         JUMP          .               [ENTRY
+            MDBR          SWPVT           [LOAD STATUS WORD INTO BR
+            JUMP'I        .+1             [UNLOCK PRI
+            JUMP          .               [TRAP: INDICATE ERROR
+
+
+[ NORMAL INTERRUPT SUBROUTINE
+
+NORML:      JUMP          .               [ENTRY
+            JUMP'I'X      NORML           [RETURN INDEXED AND UNLOCK
+
+[CONSTANTS AND VARIABLES
+
+ZERO:                     0               [CONSTANT 0
+
+TERMINATE

@@ -12,8 +12,7 @@ OBJECTS	= adageMath.o
 CFLAGS	+= -fdiagnostics-color=always $(WARN) -Wformat -Wall -lc
 
 all:	$(OBJECTS) $(BIN)/adageTape $(BIN)/tapeLister $(BIN)/extractFile \
-			$(BIN)/extractFile
-#			$(BIN)/extractFile $(BIN)/odAgt
+			$(BIN)/extractFile $(BIN)/odAgt
 
 $.o:	%.c
 		$(CC) $(CFLAGS) $(DEBUG) -c $< -o $@

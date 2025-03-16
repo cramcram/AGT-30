@@ -11,27 +11,19 @@ OBJECTS	= adageMath.o
 
 CFLAGS	+= -fdiagnostics-color=always $(WARN) -Wformat -Wall -lc
 
-all:	$(OBJECTS) $(BIN)/adageTape $(BIN)/tapeLister $(BIN)/extractFile \
-			$(BIN)/extractFile
-#			$(BIN)/extractFile $(BIN)/odAgt
+all:	$(OBJECTS) $(BIN)/adageTape $(BIN)/tapeLister $(BIN)/extractFile
 
 $.o:	%.c
 		$(CC) $(CFLAGS) $(DEBUG) -c $< -o $@
 
-$(BIN)/odAgt:	odAgt.c adageMath.o $(HEADERS) Makefile
-			$(CC) $(CFLAGS) $(DEBUG) -o $(BIN)/odAgt adageMath.o odAgt.c
-
 $(BIN)/adageTape:	adageTape.c adageMath.o $(HEADERS) Makefile
-			$(CC) $(CFLAGS) $(DEBUG) -o $(BIN)/adageTape adageMath.o \
-				adageTape.c
+			$(CC) $(CFLAGS) $(DEBUG) -o $(BIN)/adageTape adageMath.o adageTape.c
 
 $(BIN)/tapeLister:	tapeLister.c adageMath.o $(HEADERS) Makefile
-			$(CC) $(CFLAGS) $(DEBUG) -o $(BIN)/tapeLister adageMath.o \
-				tapeLister.c
+			$(CC) $(CFLAGS) $(DEBUG) -o $(BIN)/tapeLister adageMath.o tapeLister.c
 
 $(BIN)/extractFile:	extractFile.c adageMath.o $(HEADERS) Makefile
-			$(CC) $(CFLAGS) $(DEBUG) -o $(BIN)/extractFile adageMath.o \
-				extractFile.c
+			$(CC) $(CFLAGS) $(DEBUG) -o $(BIN)/extractFile adageMath.o extractFile.c
 
 adageMath.o: adageMath.c $(HEADERS)
 			$(CC) $(CFLAGS) $(DEBUG) -c adageMath.c

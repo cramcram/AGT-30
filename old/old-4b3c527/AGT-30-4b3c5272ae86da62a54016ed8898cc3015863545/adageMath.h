@@ -1,12 +1,6 @@
 #include <stdio.h>
 
-#define AMOS_SPACE		0
-#define AMOS_RAW		1
-#define AMOS_BRACKET	2
-
-#define AMOS_NUM_DEFS	3
-
-extern char amos2Ascii[3][128];
+extern char amos2Ascii[65];
 extern char amos2AsciiNoBracket[65];
 extern char *typeName[16];
 extern char *monthNames[16];
@@ -16,8 +10,8 @@ extern char *amosName2AsciiNoNull(uint32_t, char *);
 
 //extern char *amosString2Ascii[65];
 
-extern int outputAsciiFromAmosWord(FILE *, uint32_t, int, int);
-extern int outputAsciiFromAmosWordWithTabs(FILE *, uint32_t, int, int);
+extern int outputAsciiFromAmosWord(FILE *, uint32_t, int);
+extern int outputAsciiFromAmosWordWithTabs(FILE *, uint32_t, int);
 extern uint32_t add30Bit(uint32_t a, uint32_t b);
 
 extern char tabStops[256];
