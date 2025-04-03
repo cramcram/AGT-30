@@ -16,7 +16,7 @@ struct headerStruct {   // Header words for tape files
 	uint32_t fileName;
 	uint32_t dateSize;
 	uint32_t tvsOrigin;
-	uint32_t *data;
+//	uint32_t *data;
 };
 
 typedef struct headerStruct tapeHeader;
@@ -110,43 +110,6 @@ struct FTYPES typeInfo[16] =
 
 #define GOT_HERE {fprintf(stderr, "%d: Got here!\n", __LINE__);}
 
-void* readFile(FILE *fp, int *fileSize)
-{
-    size_t capacity = 1024; // Initial capacity (in uint32_t units)
-    size_t size = 0;
-    uint32_t *buffer = malloc(capacity * sizeof(uint32_t));
-    uint32_t value;
-
-    if (!fp) {
-		return NULL;
-	}
-
-    if (!buffer) {
-        perror("malloc failed");
-        return NULL;
-    }
-    
-    while (fread(&value, sizeof(uint32_t), 1, fp) == 1) {
-        if (size >= capacity) {
-            capacity *= 0x10000;
-            uint32_t *temp = realloc(buffer, capacity * sizeof(uint32_t));
-            if (!temp) {
-                perror("realloc failed");
-                free(buffer);
-                return NULL;
-            }
-            buffer = temp;
-        }
-        buffer[size++] = value;
-    }
-    
-    if (fileSize) {
-        *fileSize = size;
-    }
-
-    return buffer;
-}
-
 void usage(char *myname)
 {
 	fprintf(stderr, "Usage: %s [-i input_file_name] [-o output_file_name] "\
@@ -169,8 +132,8 @@ int main(int argc, char **argv)
 	int c;
 	int posn;
 
-	inputStream = NULL;
-	outputStream = NULL;
+	inputStream = stdin;
+	outputStream = stdout;
 
 	strcpy(inputFileName, "<stdin>");
 	strcpy(outputFileName, "<stdout>");
@@ -292,11 +255,13 @@ int main(int argc, char **argv)
 		interRecordWord = *pInput, !IS_EOT(interRecordWord = *pInput);
 		blockNum++)
 	{
+fprintf(stdout, "%d: *pInput = %011o\n", __LINE__, *pInput);
+fprintf(stdout, "%d: interRecordWord = %011o\n", __LINE__, interRecordWord);
 		if (!(IS_INTER_RECORD_WORD(interRecordWord)))
 		{
 			fprintf(stderr,
-			"Tape word %d: expected inter-record word; read 0x%08x %010o\n",
-				tapeWords, interRecordWord, interRecordWord);
+			"Tape word %d: expected inter-record word; read %010o\n",
+				tapeWords, interRecordWord);
 
 			free(pInputOrigin);
 			pInputOrigin = NULL;
@@ -305,9 +270,15 @@ int main(int argc, char **argv)
 		}
 
 		tapeBlockSizeWords = TAPE_RECORD_LENGTH_WORDS(interRecordWord);
+		fprintf(stdout, "tapeBlockSizeWords = %d\n", tapeBlockSizeWords);
 
-		pHeader = (tapeHeader *)(pInput + 1);
-		pRecordData = pInput + 5;
+//		pInput++;   // Skip over inter record word
+	
+		pHeader = (tapeHeader *)(pInput);
+		pRecordData = pInput + 4;
+fprintf(stdout,"%d: pInput offset is %d\n", __LINE__, (uint32_t)(pInput - pInputOrigin));
+fprintf(stdout,"%d: pInput[0] = %010o\n", __LINE__, pInput[0]);
+fprintf(stdout,"%d: pInput[1] = %010o\n", __LINE__, pInput[1]);
 
 		tapeRecordNum = (pHeader->recFile >> 15) & 077777;
 		tapeFileNum = pHeader->recFile & 077777;
@@ -372,10 +343,27 @@ int main(int argc, char **argv)
 
 		expectedChecksum = pRecordData[i];
 
-		pInput += tapeBlockSizeWords + 1;
+fprintf(stdout, "%d: Checksum = %010o\n", __LINE__, expectedChecksum);
+fprintf(stdout, "%d: pInput[.+0] = %010o\n", __LINE__, pInput[0]);
+fprintf(stdout, "%d: pInput[.+1] = %010o\n", __LINE__, pInput[1]);
+fprintf(stdout, "%d: pInput[.+2] = %010o\n", __LINE__, pInput[2]);
+fprintf(stdout, "%d: pInput[.+3] = %010o\n", __LINE__, pInput[3]);
+fprintf(stdout, "%d: pInput[.+4] = %010o\n", __LINE__, pInput[4]);
+fprintf(stdout, "%d: pInput[.+5] = %010o\n", __LINE__, pInput[5]);
+fprintf(stdout, "%d: pInput[.+6] = %010o\n", __LINE__, pInput[6]);
+fprintf(stdout, "%d: pInput[.+7] = %010o\n", __LINE__, pInput[7]);
+//		pInput += tapeBlockSizeWords + 1;
+
+fprintf(stdout, "%d: tapeBlockSizeWords = %011o\n", __LINE__, tapeBlockSizeWords);
+
+		pInput += tapeBlockSizeWords;
+fprintf(stdout, "%d: pInput[.+0] = %010o\n", __LINE__, pInput[0]);
+fprintf(stdout, "%d: pInput[.+1] = %010o\n", __LINE__, pInput[1]);
 		tapeWords += tapeBlockSizeWords;
 		interRecordWord = *pInput;
 		pHeader = (tapeHeader *)(pInput + 1);
+fprintf(stdout, "%d: interRecordWord = %011o\n", __LINE__, interRecordWord);
+fprintf(stdout, "%d: pHeader[0] = %011o\n", __LINE__, *(uint32_t *)pHeader);
 
 		if ((IS_EOT(interRecordWord)) ||
 			((pHeader->recFile & 077777) != tapeFileNum))

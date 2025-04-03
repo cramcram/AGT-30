@@ -5,6 +5,7 @@
 #include <unistd.h>
 #include <getopt.h>
 #include "adageMath.h"
+#include "diskLister.h"
 
 char amos2Ascii[3][128] = {{" %]!&*:_"
 							"+t?\"'r()"
@@ -71,6 +72,67 @@ uint32_t add30Bit(uint32_t a, uint32_t b)
 	}
 
 	return(sum);
+}
+
+// Extract a bit field from a 30 of 32 bit word using 30 bit BE bit positions
+// I.e., the bit equal to 2^29 is bit 0 in BE.
+// Note this means the highBit # is <= the lowBit #
+
+uint32_t bf(uint32_t word, int amosHighBit, int amosLowBit)
+{
+	int realLowBit = 29 - amosLowBit;
+	int width = ((amosLowBit - amosHighBit) + 1);
+	int mask = (1 << width) - 1;
+
+	return ((word >> realLowBit) & mask);
+}
+
+uint32_t cswToOffset(uint32_t csw)
+{
+	uint32_t absOffset;
+
+	absOffset = bf(csw, 15, 18) * DISK_WORDS_PER_CYLINDER;
+	absOffset += bf(csw, 19, 22) * DISK_SECTOR_SIZE_WORDS;
+	absOffset += bf(csw, 23, 29);
+
+	return(absOffset);
+}
+
+void* readFile(FILE *fp, int *fileSize)
+{
+    size_t capacity = 1024; // Initial capacity (in uint32_t units)
+    size_t size = 0;
+    uint32_t *buffer = malloc(capacity * sizeof(uint32_t));
+    uint32_t value;
+
+    if (!fp) {
+		return NULL;
+	}
+
+    if (!buffer) {
+        perror("malloc failed");
+        return NULL;
+    }
+    
+    while (fread(&value, sizeof(uint32_t), 1, fp) == 1) {
+        if (size >= capacity) {
+            capacity *= 0x10000;
+            uint32_t *temp = realloc(buffer, capacity * sizeof(uint32_t));
+            if (!temp) {
+                perror("realloc failed");
+                free(buffer);
+                return NULL;
+            }
+            buffer = temp;
+        }
+        buffer[size++] = value;
+    }
+    
+    if (fileSize) {
+        *fileSize = size;
+    }
+
+    return(buffer);
 }
 
 int outputAsciiFromAmosWord(FILE *outStream, uint32_t amosWord, int amosTable,

@@ -6,11 +6,12 @@
 #include <getopt.h>
 #include <errno.h>
 #include "adageMath.h"
-#include "adageTape.h"
+#include "diskLister.h"
 
 FILE *inputStream = NULL;
 FILE *outputStream = NULL;
 
+#if 0
 struct headerStruct {   // Header words for tape files
 	uint32_t recFile;
 	uint32_t fileName;
@@ -45,12 +46,80 @@ int totalFileWords;
 int blockErrors = 0;
 int errorRecord = 0;
 int blockNum;
-int i;
 int c;
-int tapeSize = 0;   // Size of "tape" in words (i.e., ignore inter-record words)
 int tapeBlockSizeWords = 0;   // Size of tape block in words
 int tapeWords = 0;
 int optind = 0;
+#endif
+
+int i;
+uint32_t *pInputOrigin = NULL;   // Saved readFile() malloc
+uint32_t *pInput = NULL;   // Pointer to current inputFile block
+
+int diskSize = 0;   // Size of "disk" in words
+
+char packName[64] = "";
+
+typedef struct {
+	uint32_t lastFirstId;
+	uint32_t numFirstCyl;
+} vdIdEntry;
+
+typedef struct {
+	vdIdEntry vId[NUM_VOL_IDS];	// 0 - 63
+	uint32_t notUsed_1;			// 64
+	uint32_t fdSectorEntry[31];	// 65 - 95
+	uint32_t lastAvailPlusOne;	// 96
+	uint32_t firstAvail;		// 97
+	uint32_t notUsed_2;			// 98
+	uint32_t creationDate;		// 99
+	uint32_t amosPackName[4];	// 100 - 103
+} vd;
+
+vd *pVolDir = NULL;
+
+typedef struct {
+	uint32_t prevNextAddr;
+	uint32_t fileInfo;
+	uint32_t amosTitle;
+	uint32_t tvrDate;
+	uint32_t numSecWords;
+} fd;
+
+typedef struct {
+	uint32_t firstNext;
+	fd fdEntry[NUM_FD_ENTRIES_PER_SECTOR];
+	uint32_t notUsed[3];
+} fdSec;
+
+fdSec (*pFdSectors)[NUM_FD_SECTORS] = NULL;
+
+typedef struct {
+	uint32_t prevNextFileId;
+	uint32_t info;
+	uint32_t name;
+	uint32_t tvrDate;
+	uint32_t secWordFile;
+	uint32_t zero;   // Not shown in Adage docs, but observed on disk image
+} fEntry;
+
+fEntry *pFE = NULL;
+fEntry *pTE = NULL;
+fEntry *pLE = NULL;
+
+int vol;
+int firstIdCSW;
+int lastIdCSW;
+int thisIdCSW;
+int startIdCyl;
+int startIdSec;
+int startIdWord;
+int lastIdCyl;
+int lastIdSec;
+int lastIdWord;
+int firstCyl;
+int numCyl;
+char fileName[64] = "";
 
 static struct option longopt[] =
 {
@@ -95,13 +164,79 @@ int main(int argc, char **argv)
 	   }
 	}
 
-	pInput = pInputOrigin = readFile(inputStream, &tapeSize);
+	pInput = pInputOrigin = readFile(inputStream, &diskSize);
 
 	if (inputStream != stdin)
 	{
 		fclose(inputStream);
 	}
 
+	pVolDir = (void *)pInput;
+	pInput += sizeof(vd);
+
+	pFdSectors = (void *)pInput;
+	pInput += sizeof(fdSec[NUM_FD_SECTORS]);
+
+	for (i = 0; i < 4; i++)
+	{
+		amosName2Ascii(pVolDir->amosPackName[i], &packName[i * 5]);
+	}
+
+	fprintf(outputStream, "Pack Name: %s\n", packName);
+
+	// Note that index 0 -> Vol 1 ID
+
+	for (i = 0; i < 32; i++)
+	{
+		if ((pVolDir->vId[i].lastFirstId) || (pVolDir->vId[i].numFirstCyl))
+		{
+			vol = i + 1;
+			thisIdCSW = firstIdCSW = bf(pVolDir->vId[i].lastFirstId, 15, 29);
+			lastIdCSW = bf(pVolDir->vId[i].lastFirstId, 0, 14);
+
+			startIdCyl = bf(pVolDir->vId[i].lastFirstId, 15, 18);
+			startIdSec = bf(pVolDir->vId[i].lastFirstId, 19, 22);
+			startIdWord = bf(pVolDir->vId[i].lastFirstId, 23, 29);
+			lastIdCyl = bf(pVolDir->vId[i].lastFirstId, 0, 3);
+			lastIdSec = bf(pVolDir->vId[i].lastFirstId, 4, 7);
+			lastIdWord = bf(pVolDir->vId[i].lastFirstId, 8, 14);
+			firstCyl = bf(pVolDir->vId[i].numFirstCyl, 15, 29) >> 4;
+			numCyl = bf(pVolDir->vId[i].numFirstCyl, 0, 14) >> 4;
+
+#if 0
+			fprintf(outputStream, "<%010o:%010o> ",
+				pVolDir->vId[i].lastFirstId, pVolDir->vId[i].numFirstCyl);
+#endif
+
+			fprintf(outputStream,
+"Volume %02o: <%010o %010o> ID = %d/%d/%d:%d to ID = %d/%d/%d:%d, Cyl = %d for %d Cyls\n",
+				vol,
+pVolDir->vId[i].lastFirstId,pVolDir->vId[i].numFirstCyl,
+				startIdCyl, startIdSec, startIdWord, cswToOffset(firstIdCSW),
+				lastIdCyl, lastIdSec, lastIdWord, cswToOffset(lastIdCSW),
+				firstCyl, numCyl);
+
+			thisIdCSW = bf(pVolDir->vId[i].lastFirstId, 15, 29);
+			lastIdCSW = bf(pVolDir->vId[i].lastFirstId, 0, 14);
+
+#define p2Id(csw) ((fEntry *)&(pInputOrigin[cswToOffset(csw)]))
+
+			do {
+				pTE = (fEntry *)&(pInputOrigin[cswToOffset(thisIdCSW)]);
+				//amosName2Ascii(p2Id(thisIdCSW)->name, fileName);
+				amosName2Ascii(pTE->name, fileName);
+				fprintf(outputStream, "Name is %s <%010o>\n", fileName, pTE->name);
+
+				thisIdCSW = bf(pTE->prevNextFileId, 15, 29);
+			} while (thisIdCSW != lastIdCSW);
+
+
+		}
+	}
+
+	fprintf(outputStream, "Done\n");
+
+#if 0
 	fprintf(outputStream, " FILE  RECORDS    NAME   ORIGIN  LENGTH   TYPE   " \
 		"VERS   REV  DA/MON/YEAR\n\n");
 
@@ -120,11 +255,6 @@ int main(int argc, char **argv)
 
 			return(1);
 		}
-
-		tapeBlockSizeWords = TAPE_RECORD_LENGTH_WORDS(interRecordWord);
-
-		pHeader = (tapeHeader *)(pInput + 1);
-		pRecordData = pInput + 5;
 
 		tapeRecordNum = (pHeader->recFile >> 15) & 077777;
 		tapeFileNum = pHeader->recFile & 077777;
@@ -172,4 +302,5 @@ int main(int argc, char **argv)
 	}
 
 	fprintf(outputStream, "Done, %d blocks\n", blockNum);
+#endif
 }
