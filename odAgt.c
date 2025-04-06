@@ -23,6 +23,14 @@ char fmt8[]="% 4d %s %s %s %s %s %s %s %s  >%s%s%s%s%s%s%s%s<\n";
 char fmt4_A[]="% 7d %s %s %s %s  >%s%s%s%s<\n";
 char fmt8_A[]="% 7d %s %s %s %s %s %s %s %s  >%s%s%s%s%s%s%s%s<\n";
 
+char fmt4_X[]="% 4d\t%s\t%s\t%s\t%s\t%s%s%s%s\n";
+char fmt8_X[]="% 4d\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s%s%s%s%s%s%s%s\n";
+
+char fmt4_AX[]="% 7d\t%s\t%s\t%s\t%s\t%s%s%s%s\n";
+char fmt8_AX[]="% 7d\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s%s%s%s%s%s%s%s\n";
+
+char *fmt = fmt4;
+
 uint32_t *pInputOrigin = NULL;   // Saved readFile() malloc
 uint32_t *pInput = NULL;   // Pointer to current inputFile block
 uint32_t *pInputLimit = NULL;   // Pointer to last input Byte
@@ -39,11 +47,13 @@ int colsm1 = 3;
 char *cptr;
 char outputName[8] = "";
 char *addrModeStr="%07o";
-char *dataModeStr="%010o";
 int sectorInfo = 0;
 int absMode = 0;
 int wideMode = 0;
 int by8Mode = 0;
+int excelMode = 0;
+
+uint32_t addr;
 
 char inbuf[128];
 char outbuf[128];
@@ -57,6 +67,7 @@ static struct option longopt[] =
    {"absolute" 		, no_argument,   		NULL, 'A'},
    {"8words" 		, no_argument,   		NULL, '8'},
    {"wide"			, no_argument,   		NULL, 'w'},
+   {"excel"			, no_argument,   		NULL, 'X'},
    {NULL    		, 0,                    NULL,  0 }
 };
 
@@ -69,6 +80,7 @@ void usage(char *myname)
 		"           --disk   	-D DISK file format listing sector addr\n"
 		"           --absolute  -A DISK file format listing abs addr\n"
 		"           --8words    -8 print 8 words/line\n"
+		"           --excell    -X Excel mode (CSV)\n"
 		"           --wide      -w Data always printed with full 32 bits\n",
 		myname);
 
@@ -85,7 +97,7 @@ int main(int argc, char **argv)
 	strcpy(inputFileName, "<stdin>");
 	strcpy(outputFileName, "<stdout>");
 
-	while ((c = getopt_long(argc, argv, "8w?i:o:DA", longopt, &optind)) >= 0)
+	while ((c = getopt_long(argc, argv, "X8w?i:o:DA", longopt, &optind)) >= 0)
 	{
 	   switch (c)
 	   {
@@ -123,6 +135,11 @@ int main(int argc, char **argv)
 
 			   break;
 
+			case 'X':
+			   excelMode = 1;
+
+			   break;
+
 			case '8':
 			   by8Mode = 1;
 			   cols = 8;
@@ -131,7 +148,6 @@ int main(int argc, char **argv)
 			   break;
 
 			case 'w':
-			   dataModeStr="%011o";
 			   wideMode = 1;
 
 			   break;
@@ -172,6 +188,49 @@ int main(int argc, char **argv)
 			octalStrBuf[cols + (i % cols)][0] = '\0';
 		}
 
+#if 1
+		if (sectorInfo == 1)
+		{
+			if ((i % 104) == 0)
+			{
+				fprintf(outputStream, "# Cylinder %d Sector %d\n",
+					i / (104 * 16), (i / 104) % 16);
+			}
+
+			addr = ((i - colsm1) % 104);
+			fmt = (excelMode) ?
+				((cols == 8) ? fmt8_X : fmt4_X) :
+				((cols == 8) ? fmt8 : fmt4);
+		}
+		else if (absMode == 1)
+		{
+			addr = i - colsm1;
+			fmt = (excelMode) ?
+				((cols == 8) ? fmt8_AX : fmt4_AX) :
+				((cols == 8) ? fmt8_A : fmt4_A);
+		}
+		else
+		{
+			addr = cols * (i / cols);
+			fmt = (excelMode) ?
+				((cols == 8) ? fmt8_X : fmt4_X) :
+				((cols == 8) ? fmt8 : fmt4);
+		}
+
+		if ((i % cols) == colsm1)
+		{
+			fprintf(outputStream, fmt, addr,
+				octalStrBuf[0], octalStrBuf[1],
+				octalStrBuf[2], octalStrBuf[3],
+				octalStrBuf[4], octalStrBuf[5],
+				octalStrBuf[6], octalStrBuf[7],
+				octalStrBuf[8], octalStrBuf[9],
+				octalStrBuf[10], octalStrBuf[11],
+				octalStrBuf[12], octalStrBuf[13],
+				octalStrBuf[14], octalStrBuf[15]);
+			}
+		}
+#else
 		if (sectorInfo == 1)
 		{
 			if ((i % 104) == 0)
@@ -226,7 +285,7 @@ int main(int argc, char **argv)
 					octalStrBuf[14], octalStrBuf[15]);
 			}
 		}
-	}
+#endif
 
 	fprintf(stdout, "inputSize = %d, remainder = %d\n", inputSize,
 			inputSize % cols);

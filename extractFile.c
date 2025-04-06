@@ -19,6 +19,9 @@ struct headerStruct {   // Header words for tape files
 //	uint32_t *data;
 };
 
+int32_t firstWriteOffset = -1;
+int32_t lastWriteOffset = -1;
+
 typedef struct headerStruct tapeHeader;
 tapeHeader *pHeader = NULL;   // (== pInput[1])
 
@@ -109,6 +112,8 @@ struct FTYPES typeInfo[16] =
 };
 
 #define GOT_HERE {fprintf(stderr, "%d: Got here!\n", __LINE__);}
+#define POFF ((uint32_t)(pInput - pInputOrigin))
+#define POFF_FROM(addr) ((uint32_t)((addr) - pInputOrigin))
 
 void usage(char *myname)
 {
@@ -255,8 +260,11 @@ int main(int argc, char **argv)
 		interRecordWord = *pInput, !IS_EOT(interRecordWord = *pInput);
 		blockNum++)
 	{
-fprintf(stdout, "%d: *pInput = %011o\n", __LINE__, *pInput);
-fprintf(stdout, "%d: interRecordWord = %011o\n", __LINE__, interRecordWord);
+		// Here, pInput points to the interRecordWord
+
+//fprintf(stdout, "%d: pInput[0](@ %d) = %011o\n", __LINE__, POFF, *pInput);
+//fprintf(stdout, "%d: interRecordWord = %011o\n", __LINE__, interRecordWord);
+
 		if (!(IS_INTER_RECORD_WORD(interRecordWord)))
 		{
 			fprintf(stderr,
@@ -270,15 +278,21 @@ fprintf(stdout, "%d: interRecordWord = %011o\n", __LINE__, interRecordWord);
 		}
 
 		tapeBlockSizeWords = TAPE_RECORD_LENGTH_WORDS(interRecordWord);
-		fprintf(stdout, "tapeBlockSizeWords = %d\n", tapeBlockSizeWords);
+//fprintf(stdout, "tapeBlockSizeWords = %d\n", tapeBlockSizeWords);
 
-//		pInput++;   // Skip over inter record word
+//fprintf(stdout, "This should be an inter record word, *(%d) -> %011o\n",
+//	POFF, *pInput);
+		pInput++;   // Skip over inter record word
 	
 		pHeader = (tapeHeader *)(pInput);
+
+//fprintf(stdout, "pHeader *(%d) -> %010o\n", POFF, *(uint32_t *)pHeader);
+
 		pRecordData = pInput + 4;
-fprintf(stdout,"%d: pInput offset is %d\n", __LINE__, (uint32_t)(pInput - pInputOrigin));
-fprintf(stdout,"%d: pInput[0] = %010o\n", __LINE__, pInput[0]);
-fprintf(stdout,"%d: pInput[1] = %010o\n", __LINE__, pInput[1]);
+
+//fprintf(stdout,"%d: pInput offset is %d\n", __LINE__, POFF);
+//fprintf(stdout,"%d: pInput[0] = %010o\n", __LINE__, pInput[POFF]);
+//fprintf(stdout,"%d: pInput[1] = %010o\n", __LINE__, pInput[POFF + 1]);
 
 		tapeRecordNum = (pHeader->recFile >> 15) & 077777;
 		tapeFileNum = pHeader->recFile & 077777;
@@ -297,10 +311,19 @@ fprintf(stdout,"%d: pInput[1] = %010o\n", __LINE__, pInput[1]);
 		typeNum = (pHeader->tvsOrigin >> (11 + 15)) & 017;
 		origin = pHeader->tvsOrigin & 077777;
 
+//fprintf(stdout, "tapeFileName = <%s>, adageFileNameWord (len %d)= >%s<\n",
+//	tapeFileName, (int)strlen(adageFileNameWord), adageFileNameWord);
+//fprintf(stdout, "typeNum = %d, adageFileTypeNum = %d\n",
+//	typeNum, adageFileTypeNum);
+
 		extractThisFile =
 			((!strncmp(tapeFileName, adageFileNameWord,
 			strlen(adageFileNameWord))) && (typeNum == adageFileTypeNum));
 
+#if 0
+fprintf(stderr, ">>> tapeRecordNum = %d, extractThisFile = %d\n",
+	tapeRecordNum, extractThisFile);
+#endif
 		if (extractThisFile)
 		{
 			if (tapeRecordNum == 1)
@@ -314,15 +337,18 @@ fprintf(stdout,"%d: pInput[1] = %010o\n", __LINE__, pInput[1]);
 			posn = 1;
 		}
 
-		for (i = 0, computedChecksum = 07777777777; i < recordBodyWords;
-			i++)
+//fprintf(stdout, "recordBodyWords = %d\n", recordBodyWords);
+		for (i = 0, computedChecksum = 07777777777, firstWriteOffset = POFF;
+			i < recordBodyWords; i++)
 		{
 			computedChecksum = add30Bit(computedChecksum, pRecordData[i]);
 
-			if (i >= (recordBodyWords - 1))
+#if 0
+			if (i >= recordBodyWords)
 			{
 				continue;
 			}
+#endif
 
 			if (extractThisFile)
 			{
@@ -336,34 +362,36 @@ fprintf(stdout,"%d: pInput[1] = %010o\n", __LINE__, pInput[1]);
 				}
 				else
 				{
-					fwrite((pRecordData + i), sizeof(uint32_t), 1,outputStream);
+//fprintf(stdout, "[%d]: Wrote from input offset %d -> %010o\n",
+//		i, POFF_FROM(pRecordData + i), pRecordData[i]);
+					fwrite((pRecordData + i), sizeof(uint32_t), 1,
+						outputStream);
 				}
 			}
 		}
 
+//fprintf(stdout, "+++ Wrote record block from %d to %d (inclusive)\n",
+//	firstWriteOffset, POFF_FROM(pRecordData + 1));
+
 		expectedChecksum = pRecordData[i];
 
-fprintf(stdout, "%d: Checksum = %010o\n", __LINE__, expectedChecksum);
-fprintf(stdout, "%d: pInput[.+0] = %010o\n", __LINE__, pInput[0]);
-fprintf(stdout, "%d: pInput[.+1] = %010o\n", __LINE__, pInput[1]);
-fprintf(stdout, "%d: pInput[.+2] = %010o\n", __LINE__, pInput[2]);
-fprintf(stdout, "%d: pInput[.+3] = %010o\n", __LINE__, pInput[3]);
-fprintf(stdout, "%d: pInput[.+4] = %010o\n", __LINE__, pInput[4]);
-fprintf(stdout, "%d: pInput[.+5] = %010o\n", __LINE__, pInput[5]);
-fprintf(stdout, "%d: pInput[.+6] = %010o\n", __LINE__, pInput[6]);
-fprintf(stdout, "%d: pInput[.+7] = %010o\n", __LINE__, pInput[7]);
+//fprintf(stdout, "%d: Checksum = %010o\n", __LINE__, expectedChecksum);
+//fprintf(stdout, "%d: pInput[.+0] = %010o\n", __LINE__, pInput[0]);
+//fprintf(stdout, "%d: pInput[.+1] = %010o\n", __LINE__, pInput[1]);
+//fprintf(stdout, "%d: pInput[.+2] = %010o\n", __LINE__, pInput[2]);
+//fprintf(stdout, "%d: pInput[.+3] = %010o\n", __LINE__, pInput[3]);
 //		pInput += tapeBlockSizeWords + 1;
 
-fprintf(stdout, "%d: tapeBlockSizeWords = %011o\n", __LINE__, tapeBlockSizeWords);
+//fprintf(stdout, "%d: tapeBlockSizeWords = %d\n", __LINE__, tapeBlockSizeWords);
 
 		pInput += tapeBlockSizeWords;
-fprintf(stdout, "%d: pInput[.+0] = %010o\n", __LINE__, pInput[0]);
-fprintf(stdout, "%d: pInput[.+1] = %010o\n", __LINE__, pInput[1]);
+//fprintf(stdout, "%d: pInput[.+0] = %010o\n", __LINE__, pInput[0]);
+//fprintf(stdout, "%d: pInput[.+1] = %010o\n", __LINE__, pInput[1]);
 		tapeWords += tapeBlockSizeWords;
 		interRecordWord = *pInput;
 		pHeader = (tapeHeader *)(pInput + 1);
-fprintf(stdout, "%d: interRecordWord = %011o\n", __LINE__, interRecordWord);
-fprintf(stdout, "%d: pHeader[0] = %011o\n", __LINE__, *(uint32_t *)pHeader);
+//fprintf(stdout, "%d: interRecordWord = %011o\n", __LINE__, interRecordWord);
+//fprintf(stdout, "%d: pHeader[0] = %011o\n", __LINE__, *(uint32_t *)pHeader);
 
 		if ((IS_EOT(interRecordWord)) ||
 			((pHeader->recFile & 077777) != tapeFileNum))

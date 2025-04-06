@@ -50,8 +50,20 @@ static struct option longopt[] =
 {
    { "input", required_argument,    0, 'i'},
    {"output", required_argument,    0, 'o'},
+   {  "help",       no_argument,    0, '?'},
    {    NULL,                 0, NULL,  0}
 };
+
+void usage(char *myname)
+{
+	fprintf(stderr,
+		"Usage: %s [-i input_file_name] [-o output_file_name]\n", myname);
+	fprintf(stderr, "           -i Specify input file name, else stdin\n");
+	fprintf(stderr, "           -o Specify output file name, else stdout\n");
+	fprintf(stderr, "           -? Print this help message\n");
+
+	return;
+}
 
 #define GOT_HERE {fprintf(stderr, "%d: Got here!\n", __LINE__);}
 
@@ -62,28 +74,35 @@ int main(int argc, char **argv)
 	inputStream = stdin;
 	outputStream = stdout;
 
-	while ((c = getopt_long(argc, argv, "i:o:", longopt, &optind)) >= 0)
+	while ((c = getopt_long(argc, argv, "?i:o:", longopt, &optind)) >= 0)
 	{
-	   switch (c)
-	   {
-		   case 'o':
-			   if ((outputStream = fopen(optarg, "w")) == NULL)
-			   {
-				   fprintf(stderr, "Couldn't open %s for writing\n", optarg);
-				   return(1);
-			   }
-			   break;
+		switch (c)
+		{
+			case 'o':
+				if ((outputStream = fopen(optarg, "w")) == NULL)
+				{
+					fprintf(stderr, "Couldn't open %s for writing\n", optarg);
 
-		   case 'i':
-			   if ((inputStream = fopen(optarg, "r")) == NULL)
-			   {
-				   fprintf(stderr, "Couldn't open %s for reading\n", optarg);
+					return(1);
+				}
 
-				   return(1);
-			   }
+				break;
 
-			   break;
-	   }
+			case 'i':
+				if ((inputStream = fopen(optarg, "r")) == NULL)
+				{
+					fprintf(stderr, "Couldn't open %s for reading\n", optarg);
+
+					return(1);
+				}
+
+				break;
+
+			case '?':
+				usage(argv[0]);
+
+				return(0);
+		}
 	}
 
 	for (inputLineNum = 0;
